@@ -13,7 +13,12 @@ import (
 	//"time"
 )
 
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+}
+
 func indexHandler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	sell_data4 := `"sell":"{"id":"4","side":"sell","quantity":10,"price":734,"timestamp":123},{"id":"4","side":"sell","quantity":10,"price":734,"timestamp":123}"`
 	w.Write([]byte(sell_data4))
 }
