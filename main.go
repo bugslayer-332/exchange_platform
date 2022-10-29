@@ -1,119 +1,109 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"time"
-
-	"github.com/Shopify/sarama"
-	"github.com/bsm/sarama-cluster"
 	"exchange/engine"
+	"github.com/shopspring/decimal"
+	//"fmt"
+	//"encoding/json"
+	//"time"
 )
 
-func main() {
-	fmt.Println("-----------------------------------------")
-	fmt.Println("        SLIM-ORDERBOOK 1.0               ")
-	fmt.Println("-----------------------------------------")
+func CreateOrder(id string, buy_or_sell engine.Side, quantity decimal.Decimal, price decimal.Decimal, time int64) *engine.Order{
+	var created_order engine.Order
+	created_order.ID = id
+	created_order.Side = buy_or_sell
+	created_order.Quantity = quantity
+	created_order.Price = price
+	created_order.Timestamp = time
 
-	// create consumer for consuming order
-	consumer := createConsumer()
-
-	// create producer to send trades and orders data
-	producer := createProducer()
-
-	// create the order book
-	book := engine.OrderBook{
-		Bids: make([]engine.Order, 0, 10000),
-		Asks: make([]engine.Order, 0, 10000),
-	}
-
-	// create a channel to know when done
-	done := make(chan bool)
-
-	// start processing order
-	go func() {
-		for msg := range consumer.Messages() {
-			var order engine.Order
-			// deserialize the message
-			order.FromJSON(msg.Value)
-			// process the order
-			trades := book.Process(order)
-
-			log.Println("Trades length: ", len(trades))
-
-			if len(trades) != 0 {
-				// send trades to message queue
-				for _, trade := range trades {
-					rawTrade := trade.ToJSON()
-
-					log.Println("Publishing trade on topic -> trades")
-					// publish the message over receiving channel
-					producer.Input() <- &sarama.ProducerMessage{
-						Topic: "trades",
-						Value: sarama.ByteEncoder(rawTrade),
-					}
-				}
-				// mark the offset as commited
-				consumer.MarkOffset(msg, "")
-			}
-		}
-		done <- true
-	}()
-	<-done
+	return &created_order
 }
 
-func createConsumer() *cluster.Consumer {
-	// define the configuration for our cluster
-	config := cluster.NewConfig()
-	config.Consumer.Return.Errors = false
-	config.Group.Return.Notifications = false
-	config.Consumer.Offsets.Initial = sarama.OffsetOldest // earliest uncommited offset
-	config.Consumer.Offsets.CommitInterval = time.Second
+func main(){
 
-	orderTopic := []string{"orders"}
+	data1 := `{
+        "id" : "1",
+        "side": "buy",
+        "quantity": 10,
+		"price" : 300,
+		"timestamp" : 123
+    }`
 
-	log.Println("Listening for orders on topic -> ", orderTopic)
-	// create the consumer
-	consumer, err := cluster.NewConsumer(
-		[]string{"127.0.0.1:9092"},
-		"orderbook-cg",
-		orderTopic,
-		config,
-	)
+	var order1 *engine.Order = &engine.Order{}
+	order1.FromJSON([]byte(data1))
 
-	if err != nil {
-		log.Fatal("Unable to connect to kafka cluster")
-	}
+	data2 := `{
+        "id" : "2",
+        "side": "buy",
+        "quantity": 10,
+		"price" : 200,
+		"timestamp" : 123
+    }`
 
-	go handleErrors(consumer)
-	go handleNotifications(consumer)
-	return consumer
-}
+	var order2 *engine.Order = &engine.Order{}
+	order2.FromJSON([]byte(data2))
 
-func handleErrors(consumer *cluster.Consumer) {
-	for err := range consumer.Errors() {
-		log.Printf("Error: %s\n", err.Error())
-	}
-}
+	data3 := `{
+        "id" : "3",
+        "side": "buy",
+        "quantity": 10,
+		"price" : 100,
+		"timestamp" : 123
+    }`
 
-func handleNotifications(consumer *cluster.Consumer) {
-	for ntf := range consumer.Notifications() {
-		log.Printf("Rebalanced %+v\n", ntf)
-	}
-}
+	var order3 *engine.Order = &engine.Order{}
+	order3.FromJSON([]byte(data3))
 
-func createProducer() sarama.AsyncProducer {
-	config := sarama.NewConfig()
-	config.Producer.Return.Successes = false         // fire and forget
-	config.Producer.Return.Errors = true             // notify on failed
-	config.Producer.RequiredAcks = sarama.WaitForAll // waits for all insync replicas to commit
+	data4 := `{
+        "id" : "1",
+        "side": "buy",
+        "quantity": 10,
+		"price" : 150,
+		"timestamp" : 123
+    }`
+	var order4 *engine.Order = &engine.Order{}
+	order4.FromJSON([]byte(data4))
 
-	producer, err := sarama.NewAsyncProducer([]string{"127.0.0.1:9092"}, config)
+	/*
+	log.Println(order1)
+	log.Println(order2)
+	log.Println(order3)
+	log.Println(order4)
+	*/
 
-	if err != nil {
-		log.Fatal("Unable to connect producer to kafka server")
-	}
+	var book *engine.OrderBook = &engine.OrderBook{}
+	book.AddBuyOrder(*order2)
+	book.AddBuyOrder(*order3)
+	book.AddBuyOrder(*order4)
+	book.AddBuyOrder(*order1)
 
-	return producer
+	//log.Println(*book)
 
+
+	sl := []int {200, 300}
+
+	sl = append(sl, 100)
+	log.Println(sl)
+	copy(sl[1:], sl[0:])
+	log.Println(sl)
+	sl[0] = 100
+	log.Println(sl)
+
+
+
+
+
+
+
+	/*var order *engine.Order = &engine.Order{}
+	order.FromJSON([]byte(data))
+	log.Println(order.Side)
+	order.ID = "23"
+	log.Println(*order)
+
+
+	str := order.ToJSON()
+	log.Println(string(str))
+	*/
 }

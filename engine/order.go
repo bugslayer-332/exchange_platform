@@ -21,7 +21,7 @@ func (order *Order) FromJSON(msg []byte) error {
 }
 
 // Convert order to json from order struct
-func (order *Order) toJSON() []byte {
-	str, _ := json.Marshal(order)
+func (order *Order) ToJSON() []byte {
+	str, _:= json.Marshal(order)
 	return str
 }

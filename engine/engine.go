@@ -7,12 +7,12 @@ import (
 // Process an order and return the trades generated before adding the remaining amount to the market
 func (book *OrderBook) Process(order Order) []Trade {
 	if order.Side.String() == "buy" {
-		return book.processLimitBuyOrder(order)
+		return book.ProcessLimitBuyOrder(order)
 	}
-	return book.processLimitSellOrder(order)
+	return book.ProcessLimitSellOrder(order)
 }
 
-func (book *OrderBook) processLimitBuyOrder(order Order) []Trade {
+func (book *OrderBook) ProcessLimitBuyOrder(order Order) []Trade {
 	log.Println("Processing LIMIT BUY ORDER ")
 	// create a trade object
 	trades := make([]Trade, 0, 1)
@@ -20,7 +20,7 @@ func (book *OrderBook) processLimitBuyOrder(order Order) []Trade {
 	n := len(book.Asks)
 
 	if n == 0 {
-		book.addBuyOrder(order)
+		book.AddBuyOrder(order)
 		return trades
 	}
 	// check if we have atleast one matching order
@@ -63,25 +63,25 @@ func (book *OrderBook) processLimitBuyOrder(order Order) []Trade {
 				)
 				order.Quantity = order.Quantity.Sub(sellOrder.Quantity)
 				// remove the sell Order as all quantities are filled by bid
-				book.removeSellOrder(i)
+				book.RemoveSellOrder(i)
 				continue
 			}
 		}
 	}
 	// finally add the order with remaining qty to book
-	book.addBuyOrder(order)
+	book.AddBuyOrder(order)
 	return trades
 }
 
 //
-func (book *OrderBook) processLimitSellOrder(order Order) []Trade {
+func (book *OrderBook) ProcessLimitSellOrder(order Order) []Trade {
 	log.Println("Processing LIMIT SELL ORDER ")
 
 	trades := make([]Trade, 0, 1)
 	n := len(book.Bids)
 
 	if n == 0 {
-		book.addSellOrder(order)
+		book.AddSellOrder(order)
 		return trades
 	}
 
@@ -111,7 +111,7 @@ func (book *OrderBook) processLimitSellOrder(order Order) []Trade {
 
 				// if buyOrder.Quantity = 0
 				if buyOrder.Quantity.IsZero() {
-					book.removeBuyOrder(i)
+					book.RemoveBuyOrder(i)
 				}
 				return trades
 			}
@@ -129,11 +129,11 @@ func (book *OrderBook) processLimitSellOrder(order Order) []Trade {
 					},
 				)
 				order.Quantity = order.Quantity.Sub(buyOrder.Quantity)
-				book.removeBuyOrder(i)
+				book.RemoveBuyOrder(i)
 				continue
 			}
 		}
 	}
-	book.addSellOrder(order)
+	book.AddSellOrder(order)
 	return trades
 }
