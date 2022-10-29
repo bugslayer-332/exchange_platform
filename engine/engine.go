@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"log"
 )
 
@@ -26,18 +27,54 @@ func (book *OrderBook) ProcessLimitBuyOrder(order Order) []Trade {
 	// check if we have atleast one matching order
 	// first compare with last sell price
 	// loop only when the new order price is less than last sell price
+	//log.Println(book.Asks[n-1])
 	if n != 0 || book.Asks[n-1].Price.LessThanOrEqual(order.Price) {
+		log.Println("Processing LIMIT BUY ORDER ")
 		// traverse all orders that match
-		for i := n - 1; i >= 0; i-- {
+		for i := 0; i < n; i++ {
+			log.Println("I am inside the for loop")
 			sellOrder := book.Asks[i]
 
 			// last sell price is 10 limit = 9
 			// return as the highest sell order is gt limit price
 			if sellOrder.Price.GreaterThan(order.Price) {
+				log.Println("I am exiting the trade")
+
 				break
 			}
+			fmt.Println(order.Price, sellOrder.Price)
+			if sellOrder.Price.Equal(order.Price) && sellOrder.Quantity.GreaterThanOrEqual(order.Quantity) {
+				log.Println("I have accepted the greater trade")
+				trades = append(
+					trades,
+					Trade{
+						TakerOrderID: order.ID,     // TakerOrderID
+						MakerOrderID: sellOrder.ID, // Maker OrderID
+						Quantity:     order.Quantity.BigInt().Uint64(),
+						Price:        sellOrder.Price.BigInt().Uint64(),
+						Timestamp:    order.Timestamp,
+					},
+				)
+			}
+			if sellOrder.Price.Equal(order.Price) && sellOrder.Quantity.LessThan(order.Quantity) {
+				log.Println("I have accepted the lessthan trade")
+				trades = append(
+					trades,
+					Trade{
+						TakerOrderID: order.ID,     // TakerOrderID
+						MakerOrderID: sellOrder.ID, // Maker OrderID
+						Quantity:     sellOrder.Quantity.BigInt().Uint64(),
+						Price:        sellOrder.Price.BigInt().Uint64(),
+						Timestamp:    order.Timestamp,
+					},
+				)
+				book.RemoveSellOrder(i)
+				continue
+			}
+
 			// fill the entire order when sellOrder has higher quantity
-			if sellOrder.Quantity.GreaterThanOrEqual(order.Quantity) {
+
+			/*if sellOrder.Quantity.GreaterThanOrEqual(order.Quantity) {
 				trades = append(
 					trades,
 					Trade{
@@ -61,19 +98,19 @@ func (book *OrderBook) ProcessLimitBuyOrder(order Order) []Trade {
 						Timestamp:    order.Timestamp,
 					},
 				)
-				order.Quantity = order.Quantity.Sub(sellOrder.Quantity)
-				// remove the sell Order as all quantities are filled by bid
-				book.RemoveSellOrder(i)
-				continue
-			}
+				order.Quantity = order.Quantity.Sub(sellOrder.Quantity)*/
+			// remove the sell Order as all quantities are filled by bid
+
 		}
 	}
-	// finally add the order with remaining qty to book
 	book.AddBuyOrder(order)
 	return trades
 }
 
-//
+// finally add the order with remaining qty to book
+//book.AddBuyOrder(order)
+//return trades
+
 func (book *OrderBook) ProcessLimitSellOrder(order Order) []Trade {
 	log.Println("Processing LIMIT SELL ORDER ")
 
@@ -96,7 +133,7 @@ func (book *OrderBook) ProcessLimitSellOrder(order Order) []Trade {
 			}
 
 			// fill the entire order of buy order is gte
-			if buyOrder.Price.GreaterThanOrEqual(order.Price) {
+			if buyOrder.Price.Equal(order.Price) && buyOrder.Quantity.GreaterThanOrEqual(order.Quantity) {
 				trades = append(
 					trades,
 					Trade{
@@ -117,7 +154,7 @@ func (book *OrderBook) ProcessLimitSellOrder(order Order) []Trade {
 			}
 
 			// fill a partial order and continue
-			if buyOrder.Quantity.LessThan(order.Quantity) {
+			if buyOrder.Price.Equal(order.Price) && buyOrder.Quantity.LessThan(order.Quantity) {
 				trades = append(
 					trades,
 					Trade{
