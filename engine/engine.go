@@ -3,6 +3,8 @@ package engine
 import (
 	"fmt"
 	"log"
+
+	"github.com/shopspring/decimal"
 )
 
 // Process an order and return the trades generated before adding the remaining amount to the market
@@ -48,26 +50,29 @@ func (book *OrderBook) ProcessLimitBuyOrder(order Order) []Trade {
 				trades = append(
 					trades,
 					Trade{
-						TakerOrderID: order.ID,     // TakerOrderID
-						MakerOrderID: sellOrder.ID, // Maker OrderID
-						Quantity:     order.Quantity.BigInt().Uint64(),
-						Price:        sellOrder.Price.BigInt().Uint64(),
-						Timestamp:    order.Timestamp,
+						To:       order.User.Username,     // TakerOrderID
+						From:     sellOrder.User.Username, // Maker OrderID
+						Quantity: order.Quantity.BigInt().Uint64(),
+						Price:    sellOrder.Price.BigInt().Uint64(),
+						//Timestamp:    order.Timestamp,
 					},
 				)
+				//order.Quantity = order.Quantity.Sub(order.Quantity)
+				//sellOrder.Quantity = sellOrder.Quantity.Sub(order.Quantity)
 			}
 			if sellOrder.Price.Equal(order.Price) && sellOrder.Quantity.LessThan(order.Quantity) {
 				log.Println("I have accepted the lessthan trade")
 				trades = append(
 					trades,
 					Trade{
-						TakerOrderID: order.ID,     // TakerOrderID
-						MakerOrderID: sellOrder.ID, // Maker OrderID
-						Quantity:     sellOrder.Quantity.BigInt().Uint64(),
-						Price:        sellOrder.Price.BigInt().Uint64(),
-						Timestamp:    order.Timestamp,
+						To:       order.User.Username,     // TakerOrderID
+						From:     sellOrder.User.Username, // Maker OrderID
+						Quantity: sellOrder.Quantity.BigInt().Uint64(),
+						Price:    sellOrder.Price.BigInt().Uint64(),
+						//Timestamp:    order.Timestamp,
 					},
 				)
+				order.Quantity = order.Quantity.Sub(sellOrder.Quantity)
 				book.RemoveSellOrder(i)
 				continue
 			}
@@ -137,13 +142,14 @@ func (book *OrderBook) ProcessLimitSellOrder(order Order) []Trade {
 				trades = append(
 					trades,
 					Trade{
-						TakerOrderID: order.ID,
-						MakerOrderID: buyOrder.ID,
-						Quantity:     order.Quantity.BigInt().Uint64(),
-						Price:        buyOrder.Price.BigInt().Uint64(),
-						Timestamp:    order.Timestamp,
+						To:       order.User.Username,
+						From:     buyOrder.User.Username,
+						Quantity: order.Quantity.BigInt().Uint64(),
+						Price:    buyOrder.Price.BigInt().Uint64(),
+						//Timestamp:    order.Timestamp,
 					},
 				)
+				order.Quantity = decimal.NewFromInt(0)
 				buyOrder.Quantity = buyOrder.Quantity.Sub(order.Quantity)
 
 				// if buyOrder.Quantity = 0
@@ -158,11 +164,11 @@ func (book *OrderBook) ProcessLimitSellOrder(order Order) []Trade {
 				trades = append(
 					trades,
 					Trade{
-						TakerOrderID: order.ID,
-						MakerOrderID: buyOrder.ID,
-						Quantity:     buyOrder.Quantity.BigInt().Uint64(),
-						Price:        buyOrder.Price.BigInt().Uint64(),
-						Timestamp:    order.Timestamp,
+						To:       buyOrder.User.Username,
+						From:     order.User.Username,
+						Quantity: buyOrder.Quantity.BigInt().Uint64(),
+						Price:    buyOrder.Price.BigInt().Uint64(),
+						//Timestamp:    order.Timestamp,
 					},
 				)
 				order.Quantity = order.Quantity.Sub(buyOrder.Quantity)
@@ -171,6 +177,7 @@ func (book *OrderBook) ProcessLimitSellOrder(order Order) []Trade {
 			}
 		}
 	}
+
 	book.AddSellOrder(order)
 	return trades
 }
