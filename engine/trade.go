@@ -3,11 +3,11 @@ package engine
 import "encoding/json"
 
 type Trade struct {
-	From     string `json:"from"`
-	To       string `json:"maker_order_id"`
-	Quantity uint64 `json:"quantity"`
-	Price    uint64 `json:"price"`
-	//Timestamp    int64  `json:"timestamp"`
+	TakerOrderID string `json:"taker_order_id"`
+	MakerOrderID string `json:"maker_order_id"`
+	Quantity     uint64 `json:"quantity"`
+	Price        uint64 `json:"price"`
+	Timestamp    int64  `json:"timestamp"`
 }
 
 // struct to json
