@@ -4,11 +4,24 @@ import (
 	"exchange/engine"
 	"fmt"
 
+	"net/http"
+	"os"
+
 	"github.com/shopspring/decimal"
 	//"fmt"
 	//"encoding/json"
 	//"time"
 )
+
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+	sell_data4 := `"sell":"{"id":"4","side":"sell","quantity":10,"price":734,"timestamp":123},{"id":"4","side":"sell","quantity":10,"price":734,"timestamp":123}"`
+	w.Write([]byte(sell_data4))
+}
 
 func CreateOrder(id string, buy_or_sell engine.Side, quantity decimal.Decimal, price decimal.Decimal, time int64) *engine.Order {
 	var created_order engine.Order
@@ -23,6 +36,11 @@ func CreateOrder(id string, buy_or_sell engine.Side, quantity decimal.Decimal, p
 
 func main() {
 
+	//Adding Data to Order Book
+
+	
+	/////////////////////////////////////////////////////// BUY ORDERS ARE HERE ////////////////////////////////////////////////////////////////////////////////
+
 	data1 := `{
         "id" : "1",
         "side": "buy",
@@ -31,10 +49,12 @@ func main() {
 		"timestamp" : 123
     }`
 
-	/////////////////////////////////////////////////////// BUY ORDERS ARE HERE ////////////////////////////////////////////////////////////////////////////////
-
 	var order1 *engine.Order = &engine.Order{}
 	order1.FromJSON([]byte(data1))
+	fmt.Println(*order1)
+
+	str := order1.ToJSON()
+	fmt.Println(string(str))
 
 	data2 := `{
         "id" : "2",
@@ -117,7 +137,8 @@ func main() {
 	book.AddBuyOrder(*order7)
 	book.AddBuyOrder(*order5)
 	book.AddBuyOrder(*order6)
-	fmt.Println(book)
+	//fmt.Println(book.Bids)
+	//fmt.Printf("%T",book.Bids)
 	// BUY ORDERS ARE ADDED AND THE BOOK IS UPDATED AND CHECKED
 	// ADDING THE SELL ORDERS NOW
 	/////////////////////////////////////////////////////////////////////////////SELL ORDERS ARE ADDED HERE ///////////////////////////////////////////////////
@@ -128,9 +149,9 @@ func main() {
 		"price" : 780,
 		"timestamp" : 123
     }`
-
 	var sell_order1 *engine.Order = &engine.Order{}
 	sell_order1.FromJSON([]byte(sell_data1))
+
 	sell_data2 := `{
         "id" : "19",
         "side": "sell",
@@ -138,9 +159,9 @@ func main() {
 		"price" : 25,
 		"timestamp" : 123
     }`
-
 	var sell_order2 *engine.Order = &engine.Order{}
 	sell_order2.FromJSON([]byte(sell_data2))
+
 	sell_data3 := `{
         "id" : "3",
         "side": "sell",
@@ -148,9 +169,9 @@ func main() {
 		"price" : 100,
 		"timestamp" : 123
     }`
-
 	var sell_order3 *engine.Order = &engine.Order{}
 	sell_order3.FromJSON([]byte(sell_data3))
+
 	sell_data4 := `{
         "id" : "4",
         "side": "sell",
@@ -158,9 +179,9 @@ func main() {
 		"price" : 734,
 		"timestamp" : 123
     }`
-
 	var sell_order4 *engine.Order = &engine.Order{}
 	sell_order4.FromJSON([]byte(sell_data4))
+
 	sell_data5 := `{
         "id" : "1",
         "side": "sell",
@@ -168,7 +189,6 @@ func main() {
 		"price" : 500,
 		"timestamp" : 123
     }`
-
 	var sell_order5 *engine.Order = &engine.Order{}
 	sell_order5.FromJSON([]byte(sell_data5))
 
@@ -178,11 +198,34 @@ func main() {
 	book.AddSellOrder(*sell_order4)
 	book.AddSellOrder(*sell_order5)
 
-	fmt.Println(book)
+	//fmt.Println(book.Asks)
 
-	var ab []engine.Trade
+	/*var ab []engine.Trade
 	ab = book.Process(*order3)
-	fmt.Println(ab)
+	fmt.Println(ab)*/
+
+	//Adding Data to Order Book
+
+	
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000"
+	}
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", indexHandler)
+	http.ListenAndServe(":"+port, mux)
+	
+	
+
+	//book.FromJSON([]byte(book))
+	//fmt.Println(*book)
+
+	fmt.Println(book.Asks)
+
+	//msg = []byte()
+	//json.Unmarshal(msg, book)
 
 	//book.AddSellOrder(*sell_order1)
 
